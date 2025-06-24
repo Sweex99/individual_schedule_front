@@ -15,6 +15,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=5
       - WATCHPACK_POLLING=true
+      - HOST=0.0.0.0
     env_file:
       - ./.env
     ports:
