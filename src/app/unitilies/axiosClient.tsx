@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "https://127.0.0.1:3001"
+  baseURL: "https://api-indi-schedule.pp.ua/"
 });
 
 apiClient.interceptors.request.use((config) => {
