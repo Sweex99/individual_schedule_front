@@ -1,0 +1,26 @@
+.hide-progress-bar-button {
+  display: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.progress-bar-wrapper {
+  width: 80%;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+}
+
+.progress-bar-content-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  margin: 100px;
+}
+
+.progress-bar-progress-wrapper {
+  justify-content: center;
+  padding: 20px;
+  margin: 20px;
+}
+
