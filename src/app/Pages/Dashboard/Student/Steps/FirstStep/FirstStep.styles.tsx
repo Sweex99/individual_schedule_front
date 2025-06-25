@@ -4,21 +4,17 @@ export const Container = styled.div`
   display: flex;
   justify-content: center;
   padding: 40px 20px;
-  width: 100%;
 `;
 
 export const FormContainer = styled.div`
-  max-width: 800px;
   background-color: #ffffff;
   padding: 32px;
   border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  width: 100%;
 `;
 
 export const TwoColumnLayout = styled.div`
   display: flex;
-  gap: 40px;
+  gap: 100px;
 
   @media (max-width: 768px) {
     flex-direction: column;

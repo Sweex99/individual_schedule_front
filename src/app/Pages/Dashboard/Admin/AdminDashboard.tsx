@@ -4,6 +4,7 @@ import styled from "@emotion/styled";
 import {
   getAllAdminRequests,
   getBulkStatement,
+  getRequestsList,
   getStatement,
   setStatus,
 } from "../../../Services/RequestService";
@@ -33,7 +34,7 @@ export const AdminDashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState<AdminRequest | null >(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>("submit");
+  const [filterStatus, setFilterStatus] = useState<string>("submitted");
   const [searchName, setSearchName] = useState<string>("");
   const [sortByDate, setSortByDate] = useState<boolean>(false);
   const [detailsLoading, setDetailsLoading] = useState<boolean>(false);
@@ -78,6 +79,16 @@ export const AdminDashboard = () => {
     stateName === 'teacher_approved' ? "fully_approve" : stateName === 'fully_approved' ? 'cancell' : ""
   }
 
+  const formatted = (rawDate: string) => {
+      return new Date(rawDate).toLocaleString("uk-UA", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+  }
+
   const downloadPdf = async (variant: string) => {
     try {
       var response = undefined;
@@ -104,6 +115,44 @@ export const AdminDashboard = () => {
     }
   };
 
+  const downloadRequestsPdf = async () => {
+    try {
+      const response = await getRequestsList(markedRequests);
+      const file_name = `request_${markedRequests.join(',')}.pdf`
+
+      const blobUrl = URL.createObjectURL(response);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = file_name;
+      link.click();
+
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Помилка завантаження PDF:", error);
+      alert("Не вдалося завантажити PDF");
+    }
+  }
+
+  const normalizeState = (state: string) => {
+    if (state === "submitted") {
+      return "Очікування підтведження деканатом"
+    } else if (state === "deanery_approved") {
+      return "Очікування підтведження кафедрою"
+    } else if (state === "department_approved") {
+      return "Очікування підтведження викладачами"
+    } else if (state === "teacher_approved") {
+      return "Очікування підтведження радою"
+    } else if (state === "fully_approved") {
+      return "Затверджено"
+    } else if (state === "rejected") {
+      return "Відхилено"
+    } else if (state === "cancelled") {
+      return "Закрито"
+    }  else if (state === "all") {
+      return "Всі"
+    }
+  }
+
   return (
     <Container>
       <Title>📋 Список запитів</Title>
@@ -116,13 +165,13 @@ export const AdminDashboard = () => {
             onChange={(e) => setSearchName(e.target.value)}
           />
           <Select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setSelectedRequest(null); }}>
-            <option value="submitted">Зареєстровані</option>
-            <option value="deanery_approved">Деканат</option>
-            <option value="department_approved">Кафедра</option>
-            <option value="teacher_approved">Викладачі</option>
-            <option value="fully_approved">Затверджено</option>
-            <option value="rejected">Відхилено</option>
-            <option value="all">Усі</option>
+            <option value="submitted">{normalizeState("submitted")}</option>
+            <option value="deanery_approved">{normalizeState("deanery_approved")}</option>
+            <option value="department_approved">{normalizeState("department_approved")}</option>
+            <option value="teacher_approved">{normalizeState("teacher_approved")}</option>
+            <option value="fully_approved">{normalizeState("fully_approved")}</option>
+            <option value="rejected">{normalizeState("rejected")}</option>
+            <option value="all">{normalizeState("all")}</option>
           </Select>
           <label>
             <input type="checkbox" checked={sortByDate} onChange={() => setSortByDate(!sortByDate)} /> Сортувати за датою
@@ -151,7 +200,10 @@ export const AdminDashboard = () => {
               </SelectedList>
 
               <DownloadButton onClick={() => downloadPdf("multiple")}>
-                Завантажити PDF
+                Завантажити PDF заяву
+              </DownloadButton>
+              <DownloadButton onClick={() => downloadRequestsPdf() }>
+                Завантажити PDF запитів
               </DownloadButton>
             </>
           )}
@@ -203,7 +255,7 @@ export const AdminDashboard = () => {
                   <strong>{req.student.first_name} {req.student.last_name}</strong>
                   <p>#{req.id}</p>
                 </div>
-                <StatusBadge state={req.state}>{req.state}</StatusBadge>
+                <StatusBadge state={req.state}>{normalizeState(req.state)}</StatusBadge>
               </RequestCard>
             ))
           )}
@@ -223,12 +275,17 @@ export const AdminDashboard = () => {
 
               <InfoBlock>
                 <Label>Статус:</Label>
-                <Value><StatusBadge state={selectedRequest.state}>{selectedRequest.state}</StatusBadge></Value>
+                <Value><StatusBadge state={selectedRequest.state}>{normalizeState(selectedRequest.state)}</StatusBadge></Value>
               </InfoBlock>
 
               <InfoBlock>
                 <Label>Причина:</Label>
                 <Value>{selectedRequest.reason.title}</Value>
+              </InfoBlock>
+
+              <InfoBlock>
+                <Label>Час подачі:</Label>
+                <Value>{formatted(selectedRequest.created_at)}</Value>
               </InfoBlock>
 
               <ActionButtons>
@@ -251,7 +308,7 @@ export const AdminDashboard = () => {
               )}
 
               <DownloadButton onClick={() => downloadPdf('single')}>
-                Завантажити PDF
+                Завантажити PDF заяви
               </DownloadButton>
             </>
           ) : (
@@ -472,8 +529,8 @@ const Button = styled.button<{ variant: 'approve' | 'reject' }>`
 
 const StatusBadge = styled.span<{ state: string }>`
   background-color: ${({ state }) =>
-    state.includes("reject") ? "#f87171" :
-    state.includes("approve") ? "#34d399" : "#60a5fa"};
+    state.includes("reject") || state.includes("cancelled") ? "#f87171" :
+    state.includes("fully_approved") ? "#34d399" : "#ff9933"};
   color: white;
   padding: 6px 12px;
   border-radius: 9999px;

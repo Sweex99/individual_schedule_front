@@ -5,6 +5,8 @@ import styled from "@emotion/styled";
 import { getAllRequests } from "../../../Services/RequestService";
 import { Request } from '../../../Models/Request'
 import { FourthStep } from "./Steps/FourthStep/FourthStep";
+import ModalWindow from '../../../Components/ModalWindow/ModalWindow'
+import { FirstStep } from "./Steps/FirstStep/FirstStep";
 
 export const StudentDashboard = () => {
   const [requests, setRequests] = useState<Request[]>([]);
@@ -17,6 +19,7 @@ export const StudentDashboard = () => {
   const [detailsLoading, setDetailsLoading] = useState<boolean>(false);
   const [openImage, setOpenImage] = useState<string | null>(null);
   const [markedRequests, setMarkedRequests] = useState<number[]>([]);
+  const [isModalOpen, setModalOpen] = useState(false);
 
   const fetchRequests = async () => {
     try {
@@ -29,6 +32,36 @@ export const StudentDashboard = () => {
     }
   };
 
+  const formatted = (rawDate: string) => {
+      return new Date(rawDate).toLocaleString("uk-UA", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+  }
+
+  const normalizeState = (state: string) => {
+    if (state === "submitted") {
+      return "Очікування підтведження деканатом"
+    } else if (state === "deanery_approved") {
+      return "Очікування підтведження кафедрою"
+    } else if (state === "department_approved") {
+      return "Очікування підтведження викладачами"
+    } else if (state === "teacher_approved") {
+      return "Очікування підтведження радою"
+    } else if (state === "fully_approved") {
+      return "Затверджено"
+    } else if (state === "rejected") {
+      return "Відхилено"
+    } else if (state === "cancelled") {
+      return "Закрито"
+    }  else if (state === "all") {
+      return "Всі"
+    }
+  }
+
   useEffect(() => {
     fetchRequests();
   }, [filterStatus]);
@@ -38,37 +71,15 @@ export const StudentDashboard = () => {
       <Title>📋 Список запитів</Title>
       <Wrapper>
         <FiltersSection>
-          <h2>🔍 Фільтри</h2>
-          <Input
-            placeholder="Пошук студента..."
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-          />
-          <Select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setSelectedRequest(null); }}>
-            <option value="submitted">Зареєстровані</option>
-            <option value="deanery_approved">Деканат</option>
-            <option value="department_approved">Кафедра</option>
-            <option value="teacher_approved">Викладачі</option>
-            <option value="fully_approved">Затверджено</option>
-            <option value="rejected">Відхилено</option>
-            <option value="all">Усі</option>
-          </Select>
-          <label>
-            <input type="checkbox" checked={sortByDate} onChange={() => setSortByDate(!sortByDate)} /> Сортувати за датою
-          </label>
+          <h2>ℹ️ Інформація</h2>
+          Для подачі запиту на індивідуальний графік потрібно буде прикріпити фото документа який за яким ви можете притендувати на нього
         </FiltersSection>
 
         <RequestsSection>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2>📋 Запити</h2>
             <button
-              onClick={() => {
-                if (markedRequests.length > 0) {
-                  setMarkedRequests([]);
-                } else {
-                  setMarkedRequests(requests.map((r) => r.id));
-                }
-              }}
+              onClick={() => setModalOpen(true)}
               style={{
                 padding: "6px 12px",
                 fontSize: "14px",
@@ -93,7 +104,7 @@ export const StudentDashboard = () => {
                   <strong>{req.student.first_name} {req.student.last_name}</strong>
                   <p>#{req.id}</p>
                 </div>
-                <StatusBadge state={req.state}>{req.state}</StatusBadge>
+                <StatusBadge state={req.state}>{normalizeState(req.state)}</StatusBadge>
               </RequestCard>
             ))
           )}
@@ -109,15 +120,34 @@ export const StudentDashboard = () => {
 
               <InfoBlock>
                 <Label>Статус:</Label>
-                <Value><StatusBadge state={selectedRequest.state}>{selectedRequest.state}</StatusBadge></Value>
+                <Value><StatusBadge state={selectedRequest.state}>{normalizeState(selectedRequest.state)}</StatusBadge></Value>
               </InfoBlock>
 
               <InfoBlock>
                 <Label>Причина:</Label>
                 <Value>{selectedRequest.reason.title}</Value>
               </InfoBlock>
-              
-              { selectedRequest.state  && (<FourthStep currentRequest={selectedRequest} />)}
+
+              <InfoBlock>
+                <Label>Час подачі:</Label>
+                <Value>{formatted(selectedRequest.created_at)}</Value>
+              </InfoBlock>
+
+              {selectedRequest.image_url && (
+                <>
+                  <Label>Зображення:</Label>
+                  <div>
+                    <PreviewImage
+                      src={selectedRequest.image_url}
+                      alt="img"
+                      onClick={() => setOpenImage(selectedRequest.image_url!)}
+                      style={{ cursor: "zoom-in" }}
+                    />
+                  </div>
+                </>
+              )}
+
+              { selectedRequest.state == "department_approved"  && (<FourthStep currentRequest={selectedRequest} />)}
             </>
           ) : (
             <p style={{ color: "#6b7280" }}>Оберіть запит для перегляду деталей</p>
@@ -130,6 +160,9 @@ export const StudentDashboard = () => {
           </Modal>
         )}
       </Wrapper>
+      <ModalWindow isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
+        <FirstStep />
+      </ModalWindow>
     </Container>
   );
 }
@@ -335,8 +368,8 @@ const Button = styled.button<{ variant: 'approve' | 'reject' }>`
 
 const StatusBadge = styled.span<{ state: string }>`
   background-color: ${({ state }) =>
-    state.includes("reject") ? "#f87171" :
-    state.includes("approve") ? "#34d399" : "#60a5fa"};
+    state.includes("reject") || state.includes("cancelled") ? "#f87171" :
+    state.includes("fully_approved") ? "#34d399" : "#ff9933"};
   color: white;
   padding: 6px 12px;
   border-radius: 9999px;

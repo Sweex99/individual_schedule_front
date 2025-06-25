@@ -174,6 +174,16 @@ export const TeacherDashboard = () => {
     }
   };
 
+  const formatted = (rawDate: string) => {
+      return new Date(rawDate).toLocaleString("uk-UA", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+  }
+
   if (loading) return <Message>⏳ Завантаження...</Message>;
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
 
@@ -267,6 +277,11 @@ export const TeacherDashboard = () => {
                   <InfoBlock>
                     <Label>Причина:</Label>
                     <Value>{selectedRequestAdmin.reason.title}</Value>
+                  </InfoBlock>
+
+                  <InfoBlock>
+                    <Label>Час подачі:</Label>
+                    <Value>{formatted(selectedRequestAdmin.created_at)}</Value>
                   </InfoBlock>
 
                   <ActionButtons>

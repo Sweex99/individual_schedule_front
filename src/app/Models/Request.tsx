@@ -5,6 +5,8 @@ export type Request = {
   id: number;
   state: string;
   student: User;
-  reason: Reason
+  reason: Reason;
+  image_url?: string;
+  created_at: string;
 }
   

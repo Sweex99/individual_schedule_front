@@ -27,10 +27,9 @@ interface Inputs {
 }
 
 interface FirstStepType {
-  formState: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export const FirstStep: FC<FirstStepType> = ({ formState }) => {
+export const FirstStep: FC<FirstStepType> = () => {
   const currentUser = useAuth();
   const { register, handleSubmit, formState: { errors }, reset } = useForm<Inputs>();
   const { submitForm, loading, error } = useSubmitForm();
@@ -85,10 +84,10 @@ export const FirstStep: FC<FirstStepType> = ({ formState }) => {
           <TwoColumnLayout>
             <LeftColumn>
               <FieldContainer>
-                <label>Файл підтвердження найму</label>
+                <label>Файл для підтвердження</label>
                 <DragAndDrop
                   fieldName="hireDocument"
-                  description="Закріпіть файл підтверджуючий найм"
+                  description="Закріпіть файл підтвердження"
                   setFileObject={setFileObject}
                 />
               </FieldContainer>

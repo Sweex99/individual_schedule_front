@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import styled from "@emotion/styled";
 import { getAllSubjects } from "../../../../../Services/SubjectService";
-import { SubmitTeacher } from "../../../../../Services/RequestService";
+import { DeclineTeacher, SubmitTeacher } from "../../../../../Services/RequestService";
 import AsyncSelect from "react-select/async";
 import { StylesConfig } from 'react-select';
 import { getTeachers } from "../../../../../Services/UsersService";
+import ModalWindow from "../../../../../Components/ModalWindow/ModalWindow";
+import { FirstStep } from "../FirstStep/FirstStep";
 
 interface Subject {
   id: number;
@@ -22,8 +24,11 @@ export const FourthStep = (currentRequest: any) => {
     comment: string | null;
     state: string | null;
     options3: { id: number; first_name: string; last_name: string }[];
+    subject_label: string;
   }[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [comment, setComment] = useState<string | null>("");
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -35,7 +40,8 @@ export const FourthStep = (currentRequest: any) => {
           hours_count: st.subject.hours_count,
           comment: st.comment,
           state: st.state,
-          options3: [st.teacher]
+          options3: [st.teacher],
+          subject_label: `${st.subject.name} (${st.subject.hours_count} год)`
         }));
 
         setRows(preparedRows);
@@ -48,7 +54,7 @@ export const FourthStep = (currentRequest: any) => {
   }, []);
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), subject_id: "", teacher_id: "", hours_count: "", comment: "", state: "", options3: [] }]);
+    setRows([...rows, { id: Date.now(), subject_id: "", teacher_id: "", hours_count: "", comment: "", state: "", options3: [], subject_label: "" }]);
   };
 
   const deleteRow = (id: number) => {
@@ -94,6 +100,21 @@ export const FourthStep = (currentRequest: any) => {
     }
   };
 
+  const handleDeclineTeacher  = async (rowId: number) => {
+    debugger;
+    const selectedRow = rows.find((row) => row.id === rowId);
+    if (!selectedRow) return;
+
+    try {
+      await DeclineTeacher(rowId);
+      deleteRow(rowId);
+      alert("Дані успішно відправлено! ✅");
+    } catch (error) {
+      console.error("Помилка надсилання даних:", error);
+      alert("Помилка надсилання даних ❌");
+    }
+  };
+
   const colourStyles: StylesConfig<any> = {
     control: (styles: any) => ({ ...styles, minWidth: "200px" }),
     menuPortal: (base: any) => ({
@@ -116,11 +137,15 @@ export const FourthStep = (currentRequest: any) => {
                 label: `${t.name} (${t.hours_count} год)`,
                 color: "blue"
               }))}
+              defaultValue={{
+                value: row.subject_id,
+                label: row.subject_label
+              }}
               isDisabled={row.state === "approved" || row.state === "rejected"}
               loadOptions={async (inputValue: any) => {
                 try {
-                  const teachers = await getAllSubjects(inputValue, currentRequest.currentRequest.id);
-                  return teachers.map((t: any) => ({
+                  const subjects = await getAllSubjects(inputValue, currentRequest.currentRequest.id);
+                  return subjects.map((t: any) => ({
                     value: t.id,
                     label: `${t.name} (${t.hours_count} год)`,
                   }));
@@ -169,6 +194,17 @@ export const FourthStep = (currentRequest: any) => {
               }}
             />
             <AddButton onClick={() => { handleSubmitTeacher(row.id) }}>Прийняти</AddButton>
+            <DeleteButton onClick={() => { handleDeclineTeacher(row.id) }}>Відхілити</DeleteButton>
+            {row?.comment !== '' ? (
+                <SubmitButton onClick={() => { setComment(row?.comment); setModalOpen(true); }}>
+                  Коментар
+                </SubmitButton>
+              ) : null}
+            <ModalWindow isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
+              <Container>
+                {comment}
+              </Container>
+            </ModalWindow>
         </TableWrapper>
         ))}
       <AddButton onClick={addRow}>➕ Додати рядок</AddButton>
@@ -278,7 +314,7 @@ const DeleteButton = styled.button`
 `;
 
 const SubmitButton = styled.button`
-  background: rgb(83, 223, 101);
+  background: rgb(78, 119, 207);
   color: white;
   border: none;
   padding: 8px 12px;
@@ -287,9 +323,6 @@ const SubmitButton = styled.button`
   border-radius: 5px;
   transition: background 0.3s ease;
 
-  &:hover {
-    background: rgb(26, 129, 40);
-  }
 `;
 
 const AddButton = styled.button`
@@ -307,3 +340,4 @@ const AddButton = styled.button`
     background: #388e3c;
   }
 `;
+

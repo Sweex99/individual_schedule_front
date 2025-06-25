@@ -57,6 +57,14 @@ export const SubmitTeacher = async (data: any) => {
   }
 };
 
+export const DeclineTeacher = async (id: number) => {
+  try {
+    const response = await apiClient.delete(`/subjects_teachers/${id}`);
+    return response.data;
+  } catch (error) {
+  }
+};
+
 export const setStatus = async (requestId: number, data: string) => {
   var requestObject = { status: data }
   try {
@@ -79,6 +87,16 @@ export const getStatement = async (requestId: number) => {
 export const getBulkStatement = async (requestsIds: number[]) => {
   try {
     const response = await apiClient.get(`/requests/${requestsIds}/bulk_statement`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  } catch (error) {
+  }
+};
+
+export const getRequestsList = async (requestsIds: number[]) => {
+  try {
+    const response = await apiClient.get(`/requests/${requestsIds}/requests_list_generate`, {
       responseType: 'blob',
     });
     return response.data;
