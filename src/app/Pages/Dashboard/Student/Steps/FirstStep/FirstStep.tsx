@@ -72,9 +72,7 @@ export const FirstStep: FC<FirstStepType> = () => {
     formData.append("request[student][group_id]", String(data.group));
     formData.append("request[reason_id]", data.reason);
 
-    await submitForm(formData, () => {
-      window.location.reload();
-    });
+    await submitForm(formData, () => {});
   };
 
   return (
@@ -87,7 +85,7 @@ export const FirstStep: FC<FirstStepType> = () => {
                 <label>Файл для підтвердження</label>
                 <DragAndDrop
                   fieldName="hireDocument"
-                  description="Закріпіть файл підтвердження"
+                  description="Закріпіть файл підтверджння"
                   setFileObject={setFileObject}
                 />
               </FieldContainer>
